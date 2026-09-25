@@ -2,13 +2,13 @@
 
 **Spatial hearing for robots: know which speaker is talking and where they are relative to us.**
 
-ASLAM explores a microphone-array system that associates speaker IDs with directions relative to a robot. The immediate experience is a simple view of nearby speakers, their speaking activity, and their bearings, with an output a robot can use to face a selected speaker. The longer-term vision includes an interactive 2D/3D representation of conversations, enhanced listening, other sound classes, and potentially a dedicated microphone cluster.
+ASLAM explores an affordable, robot-mountable microphone module and software that associate speaker IDs with directions all around a robot. The immediate experience is a simple view of nearby speakers, their speaking activity, and their bearings, with an output a robot can use to face a selected speaker. Reachy Mini is a potential host for the module; the design should also work with other robots. The longer-term vision includes an interactive 2D/3D representation of conversations, enhanced listening, and other sound classes.
 
 **Status:** concept and research planning. This repository does not yet contain a working implementation, installation procedure, or measured results. The milestones below are a proposed implementation sequence.
 
 ## Project brief
 
-The [original ASLAM Google Doc](https://docs.google.com/document/d/1lJZnOdtqwRRqZcgUf0py1M1D1JKg-9NNcGxzuiB2Atg/edit) captures the motivation and initial references. This README adapts that brief and the subsequent clarification to prioritize speaker ID and robot-relative direction, reviewed on September 25, 2026. The link provides traceability; changes to the Doc are not automatically synchronized here.
+The [original ASLAM Google Doc](https://docs.google.com/document/d/1lJZnOdtqwRRqZcgUf0py1M1D1JKg-9NNcGxzuiB2Atg/edit) captures the motivation and initial references. This README adapts that brief and subsequent clarifications to prioritize speaker ID, 360-degree horizontal direction, and an affordable module that can mount on different robots, reviewed on September 25, 2026. The link provides traceability; changes to the Doc are not automatically synchronized here.
 
 The idea grew from exploring Reachy Mini and speaker diarization, alongside an interest in separating voices in a noisy restaurant. The central question is: **can a device maintain a useful picture of who is speaking around it, and let a person or robot direct its attention to one of those sources?**
 
@@ -34,7 +34,7 @@ Proposed initial setting: one stationary, calibrated microphone array in one roo
 The prototype should:
 
 1. Capture synchronized raw microphone channels with known microphone positions and channel order.
-2. Estimate source bearings and display them on a 360-degree directional view.
+2. Estimate source bearings across the full horizontal circle, including behind the robot, and display them on a 360-degree directional view. Validate actual rear-source localization rather than only drawing a full-circle interface.
 3. Associate spatial tracks with anonymous speaker IDs such as Speaker A and Speaker B, aiming for consistency within a session through pauses and movement.
 4. Show each speaker's direction and speaking state; let the user select a speaker as the robot's attention target.
 5. Expose timestamped bearings and confidence for a robot-facing integration, and show stale observations or track loss explicitly.
@@ -69,6 +69,20 @@ A first controller should follow an explicitly selected speaker, smooth bearing 
 
 ## Proposed technical approach
 
+### Mountable microphone module
+
+Proposed first hardware design:
+
+- **Four microphones in a square or evenly spaced around a ring.** Use a non-collinear layout to support horizontal direction estimates around the device. Existing [XMOS square-array designs](https://www.xmos.com/documentation/XM-014888-PC/html/modules/fwk_xvf/doc/user_guide/03_using_the_host_application.html) provide a geometry reference; the processor is not yet selected.
+- **One shared-clock capture system** exposing all four raw microphone channels together. Choose this interface before buying loose microphones; the earlier two-microphone stereo wiring does not automatically support four.
+- **A small removable mount** with a marked forward direction, known microphone coordinates, and unobstructed acoustic ports. Test on a tabletop first, then mounted on a robot; its shell, fans, speaker, and motors can change performance.
+- **Host-side processing first.** Prefer USB multichannel audio for portability if the component cost permits. Run localization and speaker association on a laptop or suitable robot computer initially; onboard inference is a later decision that requires benchmarking.
+- **A common software output** carrying speaker IDs, bearings, timestamps, and confidence. Robot-specific adapters translate these observations into the robot's coordinate frame and motion commands.
+
+The initial hardware goal is 360-degree horizontal bearing, not full 3D direction or distance. Microphone spacing, capture electronics, dimensions, mounting method, and total budget are still open. Begin with inexpensive development boards and a simple mount; a custom PCB follows successful capture and localization tests. Four microphones do not guarantee four simultaneously separable speakers.
+
+### Processing pipeline
+
 - **Spatial processing:** evaluate [ODAS](https://github.com/introlab/odas) as a backend for localization and tracking. Build a simpler speaker-centric interface; adopting the backend does not require using ODAS Studio as the product interface.
 - **Speaker activity:** evaluate [NVIDIA Nemotron 3 Diarization](https://huggingface.co/nvidia/Nemotron-3-Diarization) as a candidate. Its model card specifies single-channel 16 kHz input, up to eight speakers, and timestamped speaker activity. It does not output source positions or isolated voice waveforms.
 - **Association:** combine spatial continuity with speaker activity and, if needed, voice embeddings. Keep spatial track IDs distinct from diarization labels; permit uncertain matches rather than forcing an identity.
@@ -95,11 +109,11 @@ This distinction follows acoustic SLAM research on [joint array and source local
 
 | Milestone | Deliverable | Evidence to collect |
 | --- | --- | --- |
-| 1. Capture and replay | Repeatable multichannel recordings with geometry and timing metadata | Channel order, synchronization, clipping, and dropped samples |
-| 2. Directional tracking | Replayable and then live source visualization | Angular error, missed/false sources, and track ID switches |
+| 1. Capture and replay | Four-microphone development assembly with repeatable recordings, geometry, and timing metadata | Channel order, synchronization, clipping, dropped samples, and component cost |
+| 2. Directional tracking | Replayable and then live source visualization across 360 degrees horizontally | Angular error across front, sides, and rear; missed/false sources; track ID switches |
 | 3. Speaker IDs and directions | Simple speaker view with session IDs, bearings, activity, and confidence | Diarization error, association errors, ID continuity through pauses, and update latency |
-| 4. Face a speaker | Robot turns toward the selected speaker using current relative bearings | Final heading error, settling time, jitter, stale-observation handling, and robustness to motor noise |
-| 5. Expansion | Spatial mapping, enhanced listening, conversation grouping, other sound classes, or a dedicated device | A separate evaluation for the chosen application |
+| 4. Mount and face a speaker | Removable module and robot adapter that turn toward the selected speaker | Mounting calibration, final heading error, settling time, jitter, stale-observation handling, and robot-generated noise |
+| 5. Expansion | Custom PCB, onboard processing, spatial mapping, enhanced listening, conversation grouping, or other sound classes | A separate evaluation for the chosen application |
 
 Use [LOCATA](https://www.locata.lms.tf.fau.de/datasets/) for localization/tracking comparisons, alongside recordings from the actual hardware. Public benchmarks cannot substitute for testing the selected array in the intended rooms. Include separated and overlapping speech, silence, reverberation, close bearings, and moving speakers. Add robot rotation and motor noise when evaluating the turn-to-speaker stage.
 
@@ -122,16 +136,18 @@ These projects solve different parts of the problem; they are candidates and ref
 
 The broader hypothesis is a reusable **spatial hearing system for robots and interactive devices**: a changing representation of which sources exist, where they are, when they speak, and how to attend to them.
 
-The map is one interface to that representation. A robot could use the same tracks to orient toward a speaker, maintain attention through movement, or choose an audio stream for speech recognition. The potential contribution is reliable integration and measured behavior across these tasks; the references above already cover substantial parts of the underlying signal processing.
+The map is one interface to that representation. A robot could use the same tracks to orient toward a speaker, maintain attention through movement, or choose an audio stream for speech recognition. A mountable module with documented geometry, repeatable calibration, and a common software interface could make these capabilities easier to reuse across robots. The potential contribution is reliable integration and measured behavior across these tasks; the references above already cover substantial parts of the underlying signal processing.
 
 Selective listening for people and spatial audio interfaces are possible later applications. Start with the tabletop/robotics prototype to validate the core before committing to wearable hardware or a broader product. Product demand and differentiation remain hypotheses to test.
 
 ## Decisions still open
 
-- Which array exposes synchronized raw channels, and what geometry suits the first experiment?
+- What total prototype budget is acceptable, including capture electronics and any computer that must be purchased?
+- Which capture board can expose four synchronized raw channels within that budget?
+- What microphone spacing and mount dimensions suit the first host robot?
 - What host computer and latency budget should the first live prototype target?
 - Which robot or head mechanism should consume the speaker-direction output?
 - For room-scale mapping, are cameras, known device poses, or multiple arrays acceptable?
 - How long should a speaker ID persist through silence, and what evidence supports re-association?
 
-Audio isolation, custom hardware, automatic conversation grouping, general sound-event recognition, and full acoustic SLAM remain later stages of the vision. The immediate next step is a repeatable capture/replay baseline that can test speaker IDs and robot-relative directions.
+Audio isolation, a custom PCB, automatic conversation grouping, general sound-event recognition, and full acoustic SLAM remain later stages of the vision. The immediate next step is to choose an affordable four-channel capture path and assemble a tabletop module that can test speaker IDs and directions all around it before mounting it on a robot.
