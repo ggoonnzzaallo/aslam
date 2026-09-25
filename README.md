@@ -73,13 +73,13 @@ A first controller should follow an explicitly selected speaker, smooth bearing 
 
 Proposed first hardware design:
 
-- **Four microphones in a square or evenly spaced around a ring.** Use a non-collinear layout to support horizontal direction estimates around the device. Existing [XMOS square-array designs](https://www.xmos.com/documentation/XM-014888-PC/html/modules/fwk_xvf/doc/user_guide/03_using_the_host_application.html) provide a geometry reference; the processor is not yet selected.
-- **One shared-clock capture system** exposing all four raw microphone channels together. Choose this interface before buying loose microphones; the earlier two-microphone stereo wiring does not automatically support four.
+- **A custom array, likely with eight microphones.** An evenly spaced ring is the proposed starting layout for horizontal direction estimates around the device. The microphone count remains provisional until capture hardware, cost, and dimensions are established.
+- **One shared-clock capture system** exposing all eight raw microphone channels together for the proposed array. Choose this interface before buying loose microphones; the earlier two-microphone stereo wiring does not automatically support eight.
 - **A small removable mount** with a marked forward direction, known microphone coordinates, and unobstructed acoustic ports. Test on a tabletop first, then mounted on a robot; its shell, fans, speaker, and motors can change performance.
 - **Host-side processing first.** Prefer USB multichannel audio for portability if the component cost permits. Run localization and speaker association on a laptop or suitable robot computer initially; onboard inference is a later decision that requires benchmarking.
 - **A common software output** carrying speaker IDs, bearings, timestamps, and confidence. Robot-specific adapters translate these observations into the robot's coordinate frame and motion commands.
 
-The initial hardware goal is 360-degree horizontal bearing, not full 3D direction or distance. Microphone spacing, capture electronics, dimensions, mounting method, and total budget are still open. Begin with inexpensive development boards and a simple mount; a custom PCB follows successful capture and localization tests. Four microphones do not guarantee four simultaneously separable speakers.
+The initial hardware goal is 360-degree horizontal bearing, not full 3D direction or distance. Microphone spacing, capture electronics, dimensions, mounting method, and total budget are still open. Begin with inexpensive development boards and a simple mount; a custom PCB follows successful capture and localization tests. Eight microphones do not guarantee eight simultaneously separable speakers; keep the first evaluation focused on two to three people.
 
 ### Processing pipeline
 
@@ -109,7 +109,7 @@ This distinction follows acoustic SLAM research on [joint array and source local
 
 | Milestone | Deliverable | Evidence to collect |
 | --- | --- | --- |
-| 1. Capture and replay | Four-microphone development assembly with repeatable recordings, geometry, and timing metadata | Channel order, synchronization, clipping, dropped samples, and component cost |
+| 1. Capture and replay | Custom microphone development assembly, provisionally eight channels, with repeatable recordings, geometry, and timing metadata | Channel order, synchronization, clipping, dropped samples, and component cost |
 | 2. Directional tracking | Replayable and then live source visualization across 360 degrees horizontally | Angular error across front, sides, and rear; missed/false sources; track ID switches |
 | 3. Speaker IDs and directions | Simple speaker view with session IDs, bearings, activity, and confidence | Diarization error, association errors, ID continuity through pauses, and update latency |
 | 4. Mount and face a speaker | Removable module and robot adapter that turn toward the selected speaker | Mounting calibration, final heading error, settling time, jitter, stale-observation handling, and robot-generated noise |
@@ -143,11 +143,11 @@ Selective listening for people and spatial audio interfaces are possible later a
 ## Decisions still open
 
 - What total prototype budget is acceptable, including capture electronics and any computer that must be purchased?
-- Which capture board can expose four synchronized raw channels within that budget?
+- Which capture board can expose eight synchronized raw channels within that budget, and does its cost support the proposed microphone count?
 - What microphone spacing and mount dimensions suit the first host robot?
 - What host computer and latency budget should the first live prototype target?
 - Which robot or head mechanism should consume the speaker-direction output?
 - For room-scale mapping, are cameras, known device poses, or multiple arrays acceptable?
 - How long should a speaker ID persist through silence, and what evidence supports re-association?
 
-Audio isolation, a custom PCB, automatic conversation grouping, general sound-event recognition, and full acoustic SLAM remain later stages of the vision. The immediate next step is to choose an affordable four-channel capture path and assemble a tabletop module that can test speaker IDs and directions all around it before mounting it on a robot.
+Audio isolation, a custom PCB, automatic conversation grouping, general sound-event recognition, and full acoustic SLAM remain later stages of the vision. The immediate next step is to price an eight-channel capture path and assemble a tabletop module that can test speaker IDs and directions all around it before mounting it on a robot.
